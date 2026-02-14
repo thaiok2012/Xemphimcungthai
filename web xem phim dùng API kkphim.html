@@ -1,0 +1,345 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Search, 
+  Play, 
+  ChevronLeft, 
+  ChevronRight,
+  Star, 
+  Calendar, 
+  Clock, 
+  Film,
+  Info,
+  X,
+  Loader2,
+  TrendingUp,
+  Tv,
+  ChevronsLeft,
+  ChevronsRight,
+  MonitorPlay
+} from 'lucide-react';
+
+const API_SEARCH = "https://phimapi.com/v1/api/tim-kiem?keyword=";
+const API_DETAIL = "https://phimapi.com/phim/";
+const API_LIST = "https://phimapi.com/v1/api/danh-sach/hoat-hinh";
+const IMG_BASE = "https://phimimg.com/";
+
+const getImageUrl = (url) => {
+  if (!url) return 'https://placehold.co/400x600/1a1a1a/E5C07B?text=No+Poster';
+  if (url.startsWith('http')) return url;
+  return `${IMG_BASE}${url}`;
+};
+
+const OptimizedImage = ({ src, alt, className }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className={`relative overflow-hidden bg-neutral-900 ${className}`}>
+      {!loaded && !error && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-500/20" />
+        </div>
+      )}
+      <img
+        src={error ? 'https://placehold.co/400x600/1a1a1a/E5C07B?text=No+Poster' : getImageUrl(src)}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        className={`w-full h-full object-cover transition-all duration-500 ${loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`}
+        loading="lazy"
+      />
+    </div>
+  );
+};
+
+const App = () => {
+  const [view, setView] = useState('home'); 
+  const [movies, setMovies] = useState([]);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeEpisode, setActiveEpisode] = useState(null);
+  const [searchTitle, setSearchTitle] = useState('Phim Mới Cập Nhật');
+  const [isPlaying, setIsPlaying] = useState(false); // Trạng thái xem phim
+  
+  // State phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(24);
+
+  const fetchMovies = async (page = 1, keyword = '') => {
+    setLoading(true);
+    try {
+      let url = "";
+      if (keyword) {
+        url = `${API_SEARCH}${encodeURIComponent(keyword)}&limit=${limit}&page=${page}`;
+      } else {
+        url = `${API_LIST}?limit=${limit}&page=${page}`;
+      }
+      
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      setMovies(data.data.items || []);
+      // API search và list trả về cấu trúc pagination khác nhau đôi chút
+      const pagination = data.data.params?.pagination;
+      // Fix lỗi tính tổng trang cho API search (đôi khi API trả về khác)
+      const total = pagination ? Math.ceil(pagination.totalItems / limit) : 1;
+      
+      setTotalPages(total > 0 ? total : 1);
+      
+      if (keyword) {
+        setSearchTitle(`Kết quả cho: "${keyword}"`);
+      } else {
+        setSearchTitle('Phim Mới Cập Nhật');
+      }
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      console.error("Lỗi:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!searchTerm) {
+        fetchMovies(currentPage);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm) {
+        setCurrentPage(1); 
+        fetchMovies(1, searchTerm);
+      } else if (searchTerm === '' && view === 'home') {
+        fetchMovies(1);
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const openDetail = async (slug) => {
+    setDetailLoading(true);
+    setIsPlaying(false); // Reset player
+    try {
+      const res = await fetch(API_DETAIL + slug);
+      const data = await res.json();
+      if (data.status) {
+        setSelectedMovie(data);
+        if (data.episodes?.[0]?.server_data?.[0]) {
+          setActiveEpisode(data.episodes[0].server_data[0]);
+        }
+        setView('detail');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (error) {
+      console.error("Lỗi chi tiết:", error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // Logic hiển thị phân trang
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    const pages = [];
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-16 flex-wrap">
+        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronsLeft size={18} /></button>
+        <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronLeft size={18} /></button>
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map(page => (
+          <button key={page} onClick={() => setCurrentPage(page)} className={`w-11 h-11 rounded-xl text-sm font-black transition-all border ${currentPage === page ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-white/5 text-gray-400 border-white/5 hover:border-amber-500/50'}`}>{page}</button>
+        ))}
+        <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronRight size={18} /></button>
+        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronsRight size={18} /></button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-[#020202] text-[#e5e5e5] font-sans selection:bg-amber-500/30">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-amber-900/10 blur-[150px] rounded-full"></div>
+        <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] bg-blue-900/5 blur-[150px] rounded-full"></div>
+      </div>
+
+      <header className="fixed top-0 w-full z-[100] bg-black/80 backdrop-blur-2xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+          <div onClick={() => { setView('home'); setSearchTerm(''); setCurrentPage(1); fetchMovies(1); }} className="flex items-center cursor-pointer group shrink-0">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tighter uppercase transition group-hover:opacity-80" style={{ fontFamily: "'Noto Serif SC', serif" }}>PHIM <span className="text-amber-500">HAY</span></h1>
+          </div>
+          <div className="flex-1 relative group max-w-xl mx-auto">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors"><Search size={18} /></div>
+            <input type="text" placeholder="Tìm kiếm phim..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 py-2.5 sm:py-3 text-sm focus:bg-white/10 focus:border-amber-500/50 outline-none transition-all shadow-xl" />
+            {searchTerm && <button onClick={() => { setSearchTerm(''); setCurrentPage(1); fetchMovies(1); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"><X size={18} /></button>}
+          </div>
+          <div className="hidden md:flex items-center gap-6 shrink-0">
+             <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition cursor-pointer"><Tv size={18} className="text-amber-500" /></div>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 pt-20 sm:pt-28">
+        {view === 'home' ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
+            {!searchTerm && (
+              <div className="flex flex-wrap items-center gap-3 mb-10 text-xs text-gray-400">
+                <span className="flex items-center gap-1 text-amber-500 font-bold uppercase tracking-tighter"><TrendingUp size={14}/> HOT:</span>
+                {['Conan', 'Phàm Nhân Tu Tiên', 'Đấu La Đại Lục', 'Naruto'].map(tag => (
+                  <button key={tag} onClick={() => setSearchTerm(tag)} className="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition">{tag}</button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-amber-500 rounded-full"></div><h3 className="text-2xl font-black tracking-tight uppercase italic font-serif">{searchTitle}</h3></div>
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] hidden sm:block">Trang {currentPage}</div>
+            </div>
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+                {[...Array(12)].map((_, i) => <div key={i} className="space-y-3"><div className="aspect-[2/3] bg-white/5 animate-pulse rounded-2xl"></div><div className="h-4 bg-white/5 animate-pulse rounded w-3/4 mx-auto"></div></div>)}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+                  {movies.length > 0 ? movies.map((movie) => (
+                    <div key={movie._id} onClick={() => openDetail(movie.slug)} className="group cursor-pointer space-y-3">
+                      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border border-white/5 shadow-lg transition-all duration-500 group-hover:-translate-y-2 group-hover:border-amber-500/50">
+                        <OptimizedImage src={movie.poster_url || movie.thumb_url} alt={movie.name} className="w-full h-full" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                           <div className="w-full h-10 bg-amber-500 rounded-xl flex items-center justify-center text-black font-black text-[10px] transform translate-y-4 group-hover:translate-y-0 transition-transform tracking-widest uppercase">XEM NGAY</div>
+                        </div>
+                        <div className="absolute top-2 right-2"><span className="px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-lg text-[9px] font-black text-amber-500 border border-amber-500/20">{movie.year}</span></div>
+                      </div>
+                      <div className="px-1 text-center sm:text-left">
+                        <h4 className="text-sm font-bold truncate group-hover:text-amber-500 transition-colors leading-tight">{movie.name}</h4>
+                        <p className="text-[10px] text-gray-500 truncate mt-1 uppercase tracking-tighter">{movie.origin_name}</p>
+                      </div>
+                    </div>
+                  )) : <div className="col-span-full py-32 flex flex-col items-center gap-4 text-gray-500"><Search size={48} className="opacity-10" /><p className="font-bold uppercase tracking-widest text-xs">Không tìm thấy phim</p></div>}
+                </div>
+                {renderPagination()}
+              </>
+            )}
+          </div>
+        ) : (
+          /* TRANG CHI TIẾT - PLAYER FIX */
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {selectedMovie && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+                <button onClick={() => setView('home')} className="flex items-center gap-2 text-gray-500 hover:text-white mb-10 transition-colors text-xs font-bold tracking-widest"><ChevronLeft size={16} /> QUAY LẠI</button>
+                <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+                  <div className="lg:col-span-4 space-y-8">
+                    <OptimizedImage src={selectedMovie.movie.poster_url || selectedMovie.movie.thumb_url} className="rounded-3xl shadow-2xl aspect-[2/3] w-full border border-white/10" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white/5 rounded-2xl p-4 border border-white/5 text-center"><div className="text-amber-500 font-black text-lg">9.8</div><div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Đánh Giá</div></div>
+                      <div className="bg-white/5 rounded-2xl p-4 border border-white/5 text-center"><div className="text-white font-black text-lg">{selectedMovie.movie.year}</div><div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Phát Hành</div></div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-8 space-y-10">
+                    <div className="space-y-4">
+                      <h2 className="text-4xl sm:text-6xl font-black font-serif leading-tight">{selectedMovie.movie.name}</h2>
+                      <p className="text-xl text-gray-500 font-medium italic">{selectedMovie.movie.origin_name}</p>
+                    </div>
+
+                    {/* KHUNG PLAYER ĐÃ SỬA */}
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                         <h4 className="flex items-center gap-3 font-black text-sm uppercase tracking-widest text-amber-500">
+                           <div className="w-2 h-2 bg-amber-500 animate-pulse rounded-full"></div> Tập: {activeEpisode?.name || '...'}
+                         </h4>
+                      </div>
+                      
+                      <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative group z-10">
+                        {/* Logic: Nếu chưa bấm Play -> Hiện Poster + Nút Play To */}
+                        {!isPlaying ? (
+                          <div className="absolute inset-0 z-20">
+                            <OptimizedImage src={selectedMovie.movie.poster_url || selectedMovie.movie.thumb_url} className="w-full h-full opacity-40 blur-sm" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                              <button 
+                                onClick={() => setIsPlaying(true)}
+                                className="w-20 h-20 bg-amber-500 rounded-full flex items-center justify-center text-black hover:scale-110 transition-transform duration-300 shadow-[0_0_40px_rgba(245,158,11,0.6)] cursor-pointer"
+                              >
+                                <Play size={40} fill="currentColor" className="ml-2" />
+                              </button>
+                            </div>
+                            <div className="absolute bottom-6 left-0 w-full text-center text-white/80 font-bold uppercase tracking-widest text-sm animate-pulse">Nhấn để xem phim</div>
+                          </div>
+                        ) : (
+                          /* Nếu đã bấm Play -> Hiện Iframe */
+                          activeEpisode ? (
+                            <iframe 
+                              src={activeEpisode.link_embed} 
+                              className="absolute inset-0 w-full h-full bg-black"
+                              frameBorder="0"
+                              allowFullScreen
+                              allow="autoplay; encrypted-media; picture-in-picture"
+                              title="Movie Player"
+                            ></iframe>
+                          ) : (
+                            <div className="h-full flex items-center justify-center flex-col gap-4 text-amber-500">
+                               <Loader2 className="animate-spin" />
+                               <span className="text-xs font-bold uppercase">Đang tải luồng...</span>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <h4 className="font-black text-xs uppercase tracking-widest text-gray-400">Danh sách tập</h4>
+                      <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        {selectedMovie.episodes?.[0]?.server_data.map((ep, idx) => (
+                          <button 
+                            key={idx}
+                            onClick={() => {
+                              setActiveEpisode(ep);
+                              setIsPlaying(true); // Tự động phát khi chọn tập mới
+                              const playerEl = document.querySelector('.aspect-video');
+                              if(playerEl) playerEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                            className={`min-w-[50px] px-4 py-2 rounded-xl text-xs font-black transition-all border ${activeEpisode?.name === ep.name ? 'bg-amber-500 text-black border-amber-500' : 'bg-white/5 text-gray-400 border-white/5 hover:border-amber-500/50 hover:text-white'}`}
+                          >
+                            {ep.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-8 bg-white/[0.02] rounded-3xl border border-white/5 space-y-4">
+                      <h4 className="text-lg font-black flex items-center gap-3 font-serif italic"><Info size={20} className="text-amber-500" /> Nội dung</h4>
+                      <div className="text-gray-400 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedMovie.movie.content }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {detailLoading && <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center"><Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" /><p className="text-xs font-black tracking-[0.4em] text-amber-500 animate-pulse uppercase">Vui lòng chờ...</p></div>}
+      
+      <footer className="mt-32 pb-16 px-6 border-t border-white/5 pt-16">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-8">
+          <div className="text-center space-y-2"><div className="text-2xl font-black font-serif tracking-tighter text-white/40 uppercase">PHIM <span className="text-amber-500/40">HAY</span></div></div>
+          <div className="flex flex-col items-center gap-2"><div className="text-[10px] text-gray-900 font-black tracking-[1.5em] uppercase">Developed by</div><div className="thai-vu-mark text-sm font-serif italic text-white/[0.03] hover:text-amber-500/20 transition-all duration-1000 cursor-default select-none">Thái Vũ</div></div>
+        </div>
+      </footer>
+
+      <style dangerouslySetInnerHTML={{ __html: `.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.2); border-radius: 10px; }`}} />
+    </div>
+  );
+};
+
+export default App;
+
+
