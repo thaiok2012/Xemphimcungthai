@@ -3,403 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phim Hay | Lịch Sử Xem Phim</title>
+    <title>Donghua 3D - Tìm Kiếm Phim</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&family=Noto+Serif+SC:wght@900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        :root { --amber-500: #f59e0b; }
-        body { background-color: #050505; color: #e5e5e5; font-family: 'Noto Sans SC', sans-serif; overflow-x: hidden; }
-        .font-serif-china { font-family: 'Noto Serif SC', serif; }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); border-radius: 10px; }
+        :root { --accent: #fbbf24; --bg: #050505; }
+        body { background-color: var(--bg); color: #f5f5f5; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
 
-        .glass-header { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-        .movie-card:hover img { transform: scale(1.1); }
-        
-        .page-transition { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .view-container { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        .active-page { background: #f59e0b !important; color: black !important; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .movie-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .movie-card:hover { transform: translateY(-8px); }
         
-        .hero-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-        .glow-1 { position: absolute; top: -10%; left: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(139, 0, 0, 0.1) 0%, transparent 70%); filter: blur(80px); }
+        .skeleton {
+            background: linear-gradient(90deg, #111 25%, #1d1d1d 50%, #111 75%);
+            background-size: 200% 100%;
+            animation: skeleton-move 1.5s infinite linear;
+        }
+        @keyframes skeleton-move {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        #page-overlay {
+            position: fixed; inset: 0; background: var(--bg); z-index: 999;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        }
+        #page-overlay.active { opacity: 1; pointer-events: all; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="hero-glow"><div class="glow-1"></div></div>
+    <div id="page-overlay"></div>
 
-    <!-- Header -->
-    <header class="fixed top-0 w-full z-[100] glass-header">
-        <div class="max-w-7xl mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
-            <div onclick="goHome()" class="flex items-center cursor-pointer group shrink-0">
-                <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase font-serif-china">
-                    DONGHUA <span class="text-amber-500">3D</span>
-                </h1>
+    <header class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div id="logo" class="flex items-center gap-2 cursor-pointer group">
+                <div class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform">
+                    <i data-lucide="play" class="w-5 h-5 text-black fill-current"></i>
+                </div>
+                <span class="text-xl font-black uppercase tracking-tighter">DONGHUA<span class="text-amber-500">3D</span></span>
             </div>
-
-            <div class="flex-1 relative group max-w-xl">
-                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-4 h-4"></i>
-                <input type="text" id="searchInput" placeholder="Tìm phim hoạt hình..." 
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 py-2.5 text-sm focus:bg-white/10 focus:border-amber-500/50 outline-none transition-all">
-            </div>
-
-            <div class="hidden md:flex items-center gap-4">
-                <button onclick="clearHistory()" title="Xóa lịch sử" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-red-500/20 hover:border-red-500/50 transition-all">
-                    <i data-lucide="trash-2" class="text-gray-400 w-4 h-4"></i>
-                </button>
+            
+            <div class="flex-1 max-w-md mx-4 relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm phim (vđ: Conan)..." 
+                    class="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-amber-500/50 outline-none transition-all">
             </div>
         </div>
     </header>
 
-    <main class="relative z-10 pt-24 sm:pt-32 min-h-screen">
-        <!-- Home View -->
-        <div id="homeView" class="max-w-7xl mx-auto px-4 sm:px-8">
-            
-            <!-- History Section -->
-            <div id="historySection" class="mb-12 hidden">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="clock" class="text-amber-500 w-5 h-5"></i>
-                        <h3 class="text-lg font-bold uppercase tracking-widest text-white/80">Vừa xem</h3>
-                    </div>
-                </div>
-                <div id="historyGrid" class="flex gap-4 overflow-x-auto no-scrollbar pb-4">
-                    <!-- History items via JS -->
-                </div>
-            </div>
-
-            <!-- Tags -->
-            <div class="flex flex-wrap items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2" id="hotTags">
-                <span class="flex items-center gap-1.5 text-amber-500 font-bold uppercase tracking-tighter text-xs mr-2">
-                    <i data-lucide="trending-up" class="w-4 h-4"></i> HOT:
-                </span>
-            </div>
-
-            <!-- List Header -->
-            <div class="flex items-center gap-4 mb-8">
-                <div class="w-1.5 h-8 bg-amber-500 rounded-full shadow-[0_0_15px_#f59e0b]"></div>
-                <h3 id="searchTitle" class="text-2xl font-black tracking-tight uppercase italic font-serif-china text-white/90">
-                    Đông Hoa Mới Cập Nhật
-                </h3>
-            </div>
-
-            <div id="movieGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 sm:gap-8"></div>
-
-            <div id="pagination" class="flex items-center justify-center gap-2 mt-16 mb-16 flex-wrap"></div>
-        </div>
-
-        <!-- Detail View -->
-        <div id="detailView" class="max-w-7xl mx-auto px-4 sm:px-8 hidden page-transition">
-            <button onclick="goHome()" class="group flex items-center gap-2 text-gray-500 hover:text-amber-500 mb-10 transition-all text-xs font-black tracking-[0.2em] uppercase">
-                <i data-lucide="chevron-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i> 
-                QUAY LẠI TRANG CHỦ
-            </button>
-
-            <div class="grid lg:grid-cols-12 gap-10 lg:gap-16">
-                <div class="lg:col-span-4 space-y-8">
-                    <div class="relative group">
-                        <img id="detailPoster" src="" class="rounded-[2.5rem] shadow-2xl aspect-[2/3] w-full border border-white/10 object-cover">
-                        <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-amber-500 rounded-3xl flex flex-col items-center justify-center text-black shadow-2xl rotate-12">
-                            <i data-lucide="star" class="w-6 h-6 fill-current"></i>
-                            <span class="text-lg font-black mt-1">9.8</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-8 space-y-10">
-                    <div class="space-y-4">
-                        <h2 id="detailName" class="text-4xl sm:text-6xl font-black font-serif-china leading-tight tracking-tighter"></h2>
-                        <p id="detailOriginName" class="text-xl text-gray-500 font-medium italic"></p>
-                    </div>
-
-                    <div class="space-y-6">
-                        <h4 class="flex items-center gap-3 font-black text-sm uppercase tracking-widest text-amber-500">
-                            <div class="w-2 h-2 bg-amber-500 animate-pulse rounded-full"></div> 
-                            Đang xem: <span id="currentEpisodeName">...</span>
-                        </h4>
-                        
-                        <div id="playerWrapper" class="aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 relative group">
-                            <div id="playOverlay" class="absolute inset-0 z-20 cursor-pointer">
-                                <img id="playerThumb" src="" class="w-full h-full opacity-40 blur-md scale-105 object-cover">
-                                <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-                                    <div class="w-20 h-20 bg-amber-500 rounded-full flex items-center justify-center text-black hover:scale-110 transition-all shadow-2xl">
-                                        <i data-lucide="play" class="w-10 h-10 fill-current ml-1"></i>
-                                    </div>
-                                    <span class="mt-4 text-white/80 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Nhấn để xem phim</span>
-                                </div>
-                            </div>
-                            <iframe id="movieIframe" class="absolute inset-0 w-full h-full hidden" allowfullscreen allow="autoplay"></iframe>
-                        </div>
-                    </div>
-
-                    <div class="space-y-6">
-                        <h4 class="font-black text-xs uppercase tracking-widest text-gray-400">Danh sách tập</h4>
-                        <div id="episodeGrid" class="flex flex-wrap gap-2.5 max-h-56 overflow-y-auto pr-2 custom-scrollbar"></div>
-                    </div>
-
-                    <div class="p-8 bg-white/[0.02] rounded-[2rem] border border-white/5 space-y-4">
-                        <h4 class="text-lg font-black font-serif-china italic text-amber-500">Cốt truyện</h4>
-                        <div id="detailContent" class="text-gray-400 text-sm leading-loose"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <div id="globalLoading" class="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center hidden">
-        <div class="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-        <p class="text-[10px] font-black tracking-[0.5em] text-amber-500 uppercase">Đang kết nối API...</p>
+    <div id="app-root" class="pt-24 pb-12 min-h-screen">
+        <!-- Nội dung sẽ được nạp tại đây -->
     </div>
 
     <script>
-        const API_LIST = "https://phimapi.com/v1/api/danh-sach/hoat-hinh";
-        const API_SEARCH = "https://phimapi.com/v1/api/tim-kiem?keyword=";
-        const API_DETAIL = "https://phimapi.com/phim/";
-        const IMG_BASE = "https://phimimg.com/";
-
-        let state = {
-            view: 'home',
-            currentPage: 1,
-            totalPages: 1,
-            searchTerm: '',
-            selectedMovie: null,
-            activeEpisode: null,
-            history: JSON.parse(localStorage.getItem('donghua_history') || '[]')
+        const CONFIG = {
+            API_LIST: "https://phimapi.com/v1/api/danh-sach/hoat-hinh",
+            API_SEARCH: "https://phimapi.com/v1/api/tim-kiem?keyword=",
+            API_DETAIL: "https://phimapi.com/phim/",
+            IMG_BASE: "https://phimimg.com/"
         };
 
-        function init() {
-            lucide.createIcons();
-            renderTags();
-            renderHistory();
-            fetchMovies();
-            
-            const searchInput = document.getElementById('searchInput');
-            let timeout = null;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    state.searchTerm = e.target.value;
-                    state.currentPage = 1;
-                    fetchMovies();
-                }, 600);
-            });
+        const state = {
+            page: 1,
+            search: '',
+            scrollPos: 0,
+            cache: new Map(),
+            isNavigating: false
+        };
 
-            document.getElementById('playOverlay').addEventListener('click', startPlaying);
-        }
+        const Router = {
+            init() {
+                document.getElementById('logo').onclick = () => {
+                    state.search = '';
+                    state.page = 1;
+                    document.getElementById('searchInput').value = '';
+                    this.navigate('/');
+                };
+                window.onpopstate = () => this.handleRoute();
+                this.handleRoute();
+            },
 
-        async function fetchMovies() {
-            showLoading(true);
-            try {
-                const url = state.searchTerm 
-                    ? `${API_SEARCH}${encodeURIComponent(state.searchTerm)}&limit=24&page=${state.currentPage}`
-                    : `${API_LIST}?limit=24&page=${state.currentPage}`;
-                
-                const res = await fetch(url);
-                const data = await res.json();
-                
-                if (data.status) {
-                    renderGrid(data.data.items);
-                    const pagination = data.data.params?.pagination;
-                    state.totalPages = pagination ? Math.ceil(pagination.totalItems / 24) : 1;
-                    renderPagination();
-                    document.getElementById('searchTitle').innerText = state.searchTerm ? `Kết quả: "${state.searchTerm}"` : "Đông Hoa Mới Cập Nhật";
+            async handleRoute() {
+                const params = new URLSearchParams(window.location.search);
+                const movieSlug = params.get('movie');
+                if (movieSlug) {
+                    await this.renderDetail(movieSlug);
+                } else {
+                    await this.renderHome();
                 }
-            } catch (e) { console.error(e); }
-            finally { showLoading(false); }
-        }
+            },
 
-        function renderGrid(movies) {
-            const grid = document.getElementById('movieGrid');
-            grid.innerHTML = movies.map(movie => `
-                <div onclick="openDetail('${movie.slug}')" class="group cursor-pointer flex flex-col gap-3 page-transition movie-card">
-                    <div class="relative aspect-[2/3] rounded-2xl overflow-hidden border border-white/5 shadow-2xl transition-all duration-500 group-hover:-translate-y-2 group-hover:border-amber-500/40">
-                        <img src="${movie.poster_url.startsWith('http') ? movie.poster_url : IMG_BASE + movie.poster_url}" class="w-full h-full object-cover transition-transform duration-700">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                            <div class="w-full h-10 bg-amber-500 rounded-xl flex items-center justify-center text-black font-black text-[10px] tracking-widest uppercase shadow-xl">XEM NGAY</div>
-                        </div>
-                    </div>
-                    <div class="px-1">
-                        <h4 class="text-sm font-bold truncate group-hover:text-amber-500 transition-colors">${movie.name}</h4>
-                        <p class="text-[10px] text-gray-500 truncate mt-0.5 uppercase tracking-tighter">${movie.origin_name}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
+            async navigate(path, slug = null) {
+                if (state.isNavigating) return;
+                state.isNavigating = true;
 
-        async function openDetail(slug) {
-            showLoading(true);
-            try {
-                const res = await fetch(API_DETAIL + slug);
-                const data = await res.json();
-                if (data.status) {
-                    state.selectedMovie = data;
-                    state.activeEpisode = data.episodes[0].server_data[0];
-                    
-                    updateDetailUI();
-                    saveToHistory(data.movie);
-                    
-                    document.getElementById('homeView').classList.add('hidden');
-                    document.getElementById('detailView').classList.remove('hidden');
-                    resetPlayerUI();
-                    
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    lucide.createIcons();
-                }
-            } catch (e) { console.error(e); }
-            finally { showLoading(false); }
-        }
+                const overlay = document.getElementById('page-overlay');
+                overlay.classList.add('active');
 
-        function updateDetailUI() {
-            const m = state.selectedMovie.movie;
-            document.getElementById('detailName').innerText = m.name;
-            document.getElementById('detailOriginName').innerText = m.origin_name;
-            document.getElementById('detailPoster').src = m.poster_url;
-            document.getElementById('playerThumb').src = m.thumb_url;
-            document.getElementById('detailContent').innerHTML = m.content;
-            document.getElementById('currentEpisodeName').innerText = state.activeEpisode.name;
-            
-            const epGrid = document.getElementById('episodeGrid');
-            epGrid.innerHTML = state.selectedMovie.episodes[0].server_data.map(ep => `
-                <button onclick="changeEpisode('${ep.name}')" 
-                    class="min-w-[55px] h-10 px-4 rounded-xl text-xs font-black border transition-all 
-                    ${state.activeEpisode.name === ep.name ? 'bg-amber-500 text-black border-amber-500' : 'bg-white/5 text-gray-400 border-white/5 hover:border-amber-500/50'}">
-                    ${ep.name}
-                </button>
-            `).join('');
-        }
+                if (!slug) state.scrollPos = window.scrollY;
 
-        function startPlaying() {
-            const iframe = document.getElementById('movieIframe');
-            const overlay = document.getElementById('playOverlay');
-            if (state.activeEpisode) {
-                iframe.src = state.activeEpisode.link_embed;
-                iframe.classList.remove('hidden');
-                overlay.classList.add('hidden');
-            }
-        }
+                const newUrl = slug ? `?movie=${slug}` : window.location.pathname;
+                window.history.pushState({ slug }, '', newUrl);
 
-        function changeEpisode(epName) {
-            const ep = state.selectedMovie.episodes[0].server_data.find(e => e.name === epName);
-            if (ep) {
-                state.activeEpisode = ep;
-                document.getElementById('currentEpisodeName').innerText = ep.name;
-                
-                const iframe = document.getElementById('movieIframe');
-                iframe.src = ep.link_embed;
-                iframe.classList.remove('hidden');
-                document.getElementById('playOverlay').classList.add('hidden');
-                
-                document.querySelectorAll('#episodeGrid button').forEach(btn => {
-                    if (btn.innerText === epName) {
-                        btn.classList.add('bg-amber-500', 'text-black');
-                        btn.classList.remove('bg-white/5', 'text-gray-400');
+                setTimeout(async () => {
+                    if (slug) {
+                        await this.renderDetail(slug);
                     } else {
-                        btn.classList.remove('bg-amber-500', 'text-black');
-                        btn.classList.add('bg-white/5', 'text-gray-400');
+                        await this.renderHome();
+                        window.scrollTo({ top: state.scrollPos, behavior: 'instant' });
                     }
-                });
+                    overlay.classList.remove('active');
+                    state.isNavigating = false;
+                }, 250);
+            },
+
+            async renderHome() {
+                const root = document.getElementById('app-root');
+                const isSearch = state.search.trim() !== '';
+                const titleText = isSearch ? `Kết quả tìm kiếm: "${state.search}"` : "Phim Mới Cập Nhật";
                 
-                document.getElementById('playerWrapper').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-
-        function saveToHistory(movie) {
-            const entry = {
-                id: movie._id,
-                name: movie.name,
-                slug: movie.slug,
-                poster: movie.poster_url,
-                time: Date.now()
-            };
-            
-            // Remove if exists, then unshift
-            state.history = state.history.filter(m => m.id !== entry.id);
-            state.history.unshift(entry);
-            state.history = state.history.slice(0, 10); // Keep 10
-            
-            localStorage.setItem('donghua_history', JSON.stringify(state.history));
-            renderHistory();
-        }
-
-        function renderHistory() {
-            const section = document.getElementById('historySection');
-            const grid = document.getElementById('historyGrid');
-            
-            if (state.history.length === 0) {
-                section.classList.add('hidden');
-                return;
-            }
-            
-            section.classList.remove('hidden');
-            grid.innerHTML = state.history.map(m => `
-                <div onclick="openDetail('${m.slug}')" class="min-w-[120px] sm:min-w-[150px] cursor-pointer group">
-                    <div class="relative aspect-[2/3] rounded-xl overflow-hidden border border-white/5 mb-2">
-                        <img src="${m.poster}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <i data-lucide="play" class="w-8 h-8 text-amber-500 fill-current"></i>
+                document.title = isSearch ? `Tìm kiếm: ${state.search}` : "Donghua 3D - Trang Chủ";
+                
+                root.innerHTML = `
+                    <section class="view-container max-w-7xl mx-auto px-4">
+                        <div class="flex items-center gap-3 mb-8">
+                            <div class="w-1.5 h-8 bg-amber-500 rounded-full"></div>
+                            <h2 class="text-2xl font-black uppercase italic">${titleText}</h2>
                         </div>
-                    </div>
-                    <p class="text-[11px] font-bold truncate text-gray-400 group-hover:text-amber-500 transition-colors">${m.name}</p>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
+                        <div id="movie-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                            ${Array(12).fill('<div class="aspect-[2/3] skeleton rounded-2xl"></div>').join('')}
+                        </div>
+                        <div id="pagination" class="mt-12 flex justify-center gap-2"></div>
+                    </section>
+                `;
 
-        function clearHistory() {
-            state.history = [];
-            localStorage.removeItem('donghua_history');
-            renderHistory();
-        }
+                // Sửa logic API ở đây: Nếu có search thì gọi API search, nếu không gọi API list
+                const url = isSearch 
+                    ? `${CONFIG.API_SEARCH}${encodeURIComponent(state.search)}&limit=24`
+                    : `${CONFIG.API_LIST}?page=${state.page}`;
 
-        function goHome() {
-            document.getElementById('homeView').classList.remove('hidden');
-            document.getElementById('detailView').classList.add('hidden');
-            document.getElementById('movieIframe').src = '';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            renderHistory();
-        }
+                try {
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    
+                    // API tìm kiếm trả về cấu trúc khác một chút so với API danh sách
+                    const movies = isSearch ? data.data.items : data.data.items;
 
-        function resetPlayerUI() {
-            document.getElementById('movieIframe').classList.add('hidden');
-            document.getElementById('movieIframe').src = '';
-            document.getElementById('playOverlay').classList.remove('hidden');
-        }
+                    const grid = document.getElementById('movie-grid');
+                    if (!movies || movies.length === 0) {
+                        grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500 font-bold uppercase tracking-widest">Không tìm thấy phim nào...</div>`;
+                        return;
+                    }
 
-        function renderPagination() {
-            const nav = document.getElementById('pagination');
-            if (state.totalPages <= 1) { nav.innerHTML = ''; return; }
-            let html = `<button onclick="changePage(1)" class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50"><i data-lucide="chevrons-left" class="w-4 h-4"></i></button>`;
-            let start = Math.max(1, state.currentPage - 2), end = Math.min(state.totalPages, start + 4);
-            if (end - start < 4) start = Math.max(1, end - 4);
-            for (let i = start; i <= end; i++) {
-                html += `<button onclick="changePage(${i})" class="w-10 h-10 rounded-xl text-xs font-bold border ${state.currentPage === i ? 'active-page' : 'bg-white/5 text-gray-400 border-white/5'}">${i}</button>`;
+                    grid.innerHTML = movies.map(m => `
+                        <div class="movie-card group cursor-pointer" onclick="Router.navigate('/movie', '${m.slug}')">
+                            <div class="relative aspect-[2/3] rounded-2xl overflow-hidden border border-white/5 mb-3 bg-neutral-900 shadow-lg">
+                                <img src="${m.poster_url.includes('http') ? m.poster_url : CONFIG.IMG_BASE + m.poster_url}" 
+                                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center text-black shadow-2xl scale-90 group-hover:scale-100 transition-transform">
+                                        <i data-lucide="play" class="fill-current"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="text-sm font-bold truncate group-hover:text-amber-500 transition-colors">${m.name}</h3>
+                            <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">${m.origin_name}</p>
+                        </div>
+                    `).join('');
+
+                    if (!isSearch) this.renderPagination(data.data.params.pagination);
+                    lucide.createIcons();
+                } catch (e) {
+                    console.error("Lỗi API:", e);
+                }
+            },
+
+            async renderDetail(slug) {
+                const root = document.getElementById('app-root');
+                window.scrollTo(0, 0);
+
+                root.innerHTML = `
+                    <section class="view-container max-w-7xl mx-auto px-4">
+                        <button onclick="Router.navigate('/')" class="flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-colors text-xs font-black tracking-widest uppercase">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i> QUAY LẠI
+                        </button>
+                        <div id="detail-content">
+                             <div class="grid md:grid-cols-12 gap-10 animate-pulse">
+                                <div class="md:col-span-4 aspect-[2/3] skeleton rounded-3xl"></div>
+                                <div class="md:col-span-8 space-y-6">
+                                    <div class="h-12 w-3/4 skeleton rounded-xl"></div>
+                                    <div class="h-64 w-full skeleton rounded-[2rem]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                `;
+
+                try {
+                    let data;
+                    if (state.cache.has(slug)) {
+                        data = state.cache.get(slug);
+                    } else {
+                        const res = await fetch(CONFIG.API_DETAIL + slug);
+                        data = await res.json();
+                        state.cache.set(slug, data);
+                    }
+
+                    const m = data.movie;
+                    document.title = `${m.name} - Donghua 3D`;
+
+                    document.getElementById('detail-content').innerHTML = `
+                        <div class="grid lg:grid-cols-12 gap-10">
+                            <div class="lg:col-span-4">
+                                <img src="${m.poster_url}" class="w-full rounded-[2rem] shadow-2xl border border-white/10 sticky top-24">
+                            </div>
+                            <div class="lg:col-span-8 space-y-8">
+                                <div>
+                                    <h1 class="text-4xl md:text-5xl font-black mb-2">${m.name}</h1>
+                                    <p class="text-amber-500 font-bold">${m.origin_name} (${m.year})</p>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div class="aspect-video bg-black rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl relative">
+                                        <iframe id="main-player" src="" class="w-full h-full hidden" allowfullscreen></iframe>
+                                        <div id="player-ui" class="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900">
+                                            <div class="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center text-black shadow-xl">
+                                                <i data-lucide="play" class="fill-current"></i>
+                                            </div>
+                                            <p class="mt-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Chọn tập phim bên dưới</p>
+                                        </div>
+                                    </div>
+                                    <div id="ep-name-display" class="text-center text-xs font-bold text-amber-500 uppercase"></div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <h3 class="text-xs font-black uppercase text-gray-500 tracking-widest">Danh sách tập</h3>
+                                    <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                        ${data.episodes[0].server_data.map(ep => `
+                                            <button onclick="AppActions.playVideo('${ep.link_embed}', '${ep.name}')" 
+                                                class="ep-btn px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-xs font-bold transition-all">
+                                                ${ep.name}
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-white/[0.02] rounded-3xl border border-white/5">
+                                    <h4 class="text-amber-500 font-bold mb-3 uppercase text-xs tracking-widest">Nội dung</h4>
+                                    <div class="text-gray-400 text-sm leading-relaxed">${m.content}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                } catch (e) { console.error(e); }
+            },
+
+            renderPagination(p) {
+                const nav = document.getElementById('pagination');
+                const total = Math.ceil(p.totalItems / p.totalItemsPerPage);
+                if (total <= 1) return;
+                let html = '';
+                for (let i = Math.max(1, state.page - 2); i <= Math.min(total, state.page + 2); i++) {
+                    html += `<button onclick="AppActions.setPage(${i})" class="w-10 h-10 rounded-xl text-xs font-bold border ${state.page === i ? 'bg-amber-500 text-black' : 'bg-white/5 text-gray-400'}">${i}</button>`;
+                }
+                nav.innerHTML = html;
             }
-            html += `<button onclick="changePage(${state.totalPages})" class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50"><i data-lucide="chevrons-right" class="w-4 h-4"></i></button>`;
-            nav.innerHTML = html;
-            lucide.createIcons();
-        }
+        };
 
-        function changePage(p) { state.currentPage = p; fetchMovies(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        
-        function renderTags() {
-            const tags = ['Thế Giới Hoàn Mỹ', 'Tiên Nghịch', 'Đấu Phá Thương Khung', 'Thần Ấn Vương Tọa'];
-            document.getElementById('hotTags').innerHTML += tags.map(tag => `
-                <button onclick="setSearch('${tag}')" class="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-all text-[10px] text-gray-400 whitespace-nowrap">${tag}</button>
-            `).join('');
-        }
+        const AppActions = {
+            playVideo(link, name) {
+                const ifr = document.getElementById('main-player');
+                const ui = document.getElementById('player-ui');
+                ifr.src = link;
+                ifr.classList.remove('hidden');
+                ui.classList.add('hidden');
+                document.getElementById('ep-name-display').innerText = `Đang xem tập: ${name}`;
+                
+                document.querySelectorAll('.ep-btn').forEach(btn => {
+                    const active = btn.innerText === name;
+                    btn.className = `ep-btn px-4 py-2 border rounded-xl text-xs font-bold transition-all ${active ? 'bg-amber-500 text-black border-amber-500' : 'bg-white/5 text-gray-400 border-white/5'}`;
+                });
+            },
+            setPage(p) {
+                state.page = p;
+                Router.renderHome();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
 
-        function setSearch(val) { document.getElementById('searchInput').value = val; state.searchTerm = val; state.currentPage = 1; fetchMovies(); }
-        function showLoading(s) { document.getElementById('globalLoading').classList.toggle('hidden', !s); }
+        // Lắng nghe tìm kiếm
+        let searchT;
+        document.getElementById('searchInput').oninput = (e) => {
+            clearTimeout(searchT);
+            searchT = setTimeout(() => {
+                state.search = e.target.value;
+                state.page = 1;
+                // Nếu đang ở trang chi tiết, quay về trang chủ để xem kết quả
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('movie')) {
+                    Router.navigate('/');
+                } else {
+                    Router.renderHome();
+                }
+            }, 600);
+        };
 
-        init();
+        window.onload = () => Router.init();
     </script>
 </body>
 </html>
