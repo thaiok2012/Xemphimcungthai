@@ -3,311 +3,404 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phim Hay - Thái Vũ</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Phim Hay | Lịch Sử Xem Phim</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&family=Noto+Serif+SC:wght@900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #020202; margin: 0; padding: 0; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; } 
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); } 
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.2); border-radius: 10px; }
+        :root { --amber-500: #f59e0b; }
+        body { background-color: #050505; color: #e5e5e5; font-family: 'Noto Sans SC', sans-serif; overflow-x: hidden; }
+        .font-serif-china { font-family: 'Noto Serif SC', serif; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); border-radius: 10px; }
+
+        .glass-header { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .movie-card:hover img { transform: scale(1.1); }
+        
+        .page-transition { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .active-page { background: #f59e0b !important; color: black !important; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        
+        .hero-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .glow-1 { position: absolute; top: -10%; left: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(139, 0, 0, 0.1) 0%, transparent 70%); filter: blur(80px); }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        // Giải nén các hàm từ thư viện để code của bạn dùng được ngay
-        const { useState, useEffect, useMemo } = React;
-        const { 
-            Search, Play, ChevronLeft, ChevronRight, Star, Calendar, Clock, Film, 
-            Info, X, Loader2, TrendingUp, Tv, ChevronsLeft, ChevronsRight, MonitorPlay 
-        } = lucide;
+    <div class="hero-glow"><div class="glow-1"></div></div>
 
-        // ==========================================
-        // BẮT ĐẦU CODE CỦA BẠN (GIỮ NGUYÊN 100%)
-        // ==========================================
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-[100] glass-header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+            <div onclick="goHome()" class="flex items-center cursor-pointer group shrink-0">
+                <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase font-serif-china">
+                    DONGHUA <span class="text-amber-500">3D</span>
+                </h1>
+            </div>
+
+            <div class="flex-1 relative group max-w-xl">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-4 h-4"></i>
+                <input type="text" id="searchInput" placeholder="Tìm phim hoạt hình..." 
+                    class="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 py-2.5 text-sm focus:bg-white/10 focus:border-amber-500/50 outline-none transition-all">
+            </div>
+
+            <div class="hidden md:flex items-center gap-4">
+                <button onclick="clearHistory()" title="Xóa lịch sử" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-red-500/20 hover:border-red-500/50 transition-all">
+                    <i data-lucide="trash-2" class="text-gray-400 w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10 pt-24 sm:pt-32 min-h-screen">
+        <!-- Home View -->
+        <div id="homeView" class="max-w-7xl mx-auto px-4 sm:px-8">
+            
+            <!-- History Section -->
+            <div id="historySection" class="mb-12 hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="clock" class="text-amber-500 w-5 h-5"></i>
+                        <h3 class="text-lg font-bold uppercase tracking-widest text-white/80">Vừa xem</h3>
+                    </div>
+                </div>
+                <div id="historyGrid" class="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+                    <!-- History items via JS -->
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="flex flex-wrap items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2" id="hotTags">
+                <span class="flex items-center gap-1.5 text-amber-500 font-bold uppercase tracking-tighter text-xs mr-2">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> HOT:
+                </span>
+            </div>
+
+            <!-- List Header -->
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-1.5 h-8 bg-amber-500 rounded-full shadow-[0_0_15px_#f59e0b]"></div>
+                <h3 id="searchTitle" class="text-2xl font-black tracking-tight uppercase italic font-serif-china text-white/90">
+                    Đông Hoa Mới Cập Nhật
+                </h3>
+            </div>
+
+            <div id="movieGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 sm:gap-8"></div>
+
+            <div id="pagination" class="flex items-center justify-center gap-2 mt-16 mb-16 flex-wrap"></div>
+        </div>
+
+        <!-- Detail View -->
+        <div id="detailView" class="max-w-7xl mx-auto px-4 sm:px-8 hidden page-transition">
+            <button onclick="goHome()" class="group flex items-center gap-2 text-gray-500 hover:text-amber-500 mb-10 transition-all text-xs font-black tracking-[0.2em] uppercase">
+                <i data-lucide="chevron-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i> 
+                QUAY LẠI TRANG CHỦ
+            </button>
+
+            <div class="grid lg:grid-cols-12 gap-10 lg:gap-16">
+                <div class="lg:col-span-4 space-y-8">
+                    <div class="relative group">
+                        <img id="detailPoster" src="" class="rounded-[2.5rem] shadow-2xl aspect-[2/3] w-full border border-white/10 object-cover">
+                        <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-amber-500 rounded-3xl flex flex-col items-center justify-center text-black shadow-2xl rotate-12">
+                            <i data-lucide="star" class="w-6 h-6 fill-current"></i>
+                            <span class="text-lg font-black mt-1">9.8</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-10">
+                    <div class="space-y-4">
+                        <h2 id="detailName" class="text-4xl sm:text-6xl font-black font-serif-china leading-tight tracking-tighter"></h2>
+                        <p id="detailOriginName" class="text-xl text-gray-500 font-medium italic"></p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <h4 class="flex items-center gap-3 font-black text-sm uppercase tracking-widest text-amber-500">
+                            <div class="w-2 h-2 bg-amber-500 animate-pulse rounded-full"></div> 
+                            Đang xem: <span id="currentEpisodeName">...</span>
+                        </h4>
+                        
+                        <div id="playerWrapper" class="aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 relative group">
+                            <div id="playOverlay" class="absolute inset-0 z-20 cursor-pointer">
+                                <img id="playerThumb" src="" class="w-full h-full opacity-40 blur-md scale-105 object-cover">
+                                <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                                    <div class="w-20 h-20 bg-amber-500 rounded-full flex items-center justify-center text-black hover:scale-110 transition-all shadow-2xl">
+                                        <i data-lucide="play" class="w-10 h-10 fill-current ml-1"></i>
+                                    </div>
+                                    <span class="mt-4 text-white/80 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Nhấn để xem phim</span>
+                                </div>
+                            </div>
+                            <iframe id="movieIframe" class="absolute inset-0 w-full h-full hidden" allowfullscreen allow="autoplay"></iframe>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <h4 class="font-black text-xs uppercase tracking-widest text-gray-400">Danh sách tập</h4>
+                        <div id="episodeGrid" class="flex flex-wrap gap-2.5 max-h-56 overflow-y-auto pr-2 custom-scrollbar"></div>
+                    </div>
+
+                    <div class="p-8 bg-white/[0.02] rounded-[2rem] border border-white/5 space-y-4">
+                        <h4 class="text-lg font-black font-serif-china italic text-amber-500">Cốt truyện</h4>
+                        <div id="detailContent" class="text-gray-400 text-sm leading-loose"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="globalLoading" class="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center hidden">
+        <div class="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] font-black tracking-[0.5em] text-amber-500 uppercase">Đang kết nối API...</p>
+    </div>
+
+    <script>
+        const API_LIST = "https://phimapi.com/v1/api/danh-sach/hoat-hinh";
         const API_SEARCH = "https://phimapi.com/v1/api/tim-kiem?keyword=";
         const API_DETAIL = "https://phimapi.com/phim/";
-        const API_LIST = "https://phimapi.com/v1/api/danh-sach/hoat-hinh";
         const IMG_BASE = "https://phimimg.com/";
 
-        const getImageUrl = (url) => {
-          if (!url) return 'https://placehold.co/400x600/1a1a1a/E5C07B?text=No+Poster';
-          if (url.startsWith('http')) return url;
-          return `${IMG_BASE}${url}`;
+        let state = {
+            view: 'home',
+            currentPage: 1,
+            totalPages: 1,
+            searchTerm: '',
+            selectedMovie: null,
+            activeEpisode: null,
+            history: JSON.parse(localStorage.getItem('donghua_history') || '[]')
         };
 
-        const OptimizedImage = ({ src, alt, className }) => {
-          const [loaded, setLoaded] = useState(false);
-          const [error, setError] = useState(false);
+        function init() {
+            lucide.createIcons();
+            renderTags();
+            renderHistory();
+            fetchMovies();
+            
+            const searchInput = document.getElementById('searchInput');
+            let timeout = null;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    state.searchTerm = e.target.value;
+                    state.currentPage = 1;
+                    fetchMovies();
+                }, 600);
+            });
 
-          return (
-            <div className={`relative overflow-hidden bg-neutral-900 ${className}`}>
-              {!loaded && !error && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-amber-500/20" />
-                </div>
-              )}
-              <img
-                src={error ? 'https://placehold.co/400x600/1a1a1a/E5C07B?text=No+Poster' : getImageUrl(src)}
-                alt={alt}
-                onLoad={() => setLoaded(true)}
-                onError={() => setError(true)}
-                className={`w-full h-full object-cover transition-all duration-500 ${loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'}`}
-                loading="lazy"
-              />
-            </div>
-          );
-        };
+            document.getElementById('playOverlay').addEventListener('click', startPlaying);
+        }
 
-        const App = () => {
-          const [view, setView] = useState('home'); 
-          const [movies, setMovies] = useState([]);
-          const [selectedMovie, setSelectedMovie] = useState(null);
-          const [loading, setLoading] = useState(true);
-          const [detailLoading, setDetailLoading] = useState(false);
-          const [searchTerm, setSearchTerm] = useState('');
-          const [activeEpisode, setActiveEpisode] = useState(null);
-          const [searchTitle, setSearchTitle] = useState('Phim Mới Cập Nhật');
-          const [isPlaying, setIsPlaying] = useState(false); 
-          
-          const [currentPage, setCurrentPage] = useState(1);
-          const [totalPages, setTotalPages] = useState(1);
-          const [limit] = useState(24);
-
-          const fetchMovies = async (page = 1, keyword = '') => {
-            setLoading(true);
+        async function fetchMovies() {
+            showLoading(true);
             try {
-              let url = "";
-              if (keyword) {
-                url = `${API_SEARCH}${encodeURIComponent(keyword)}&limit=${limit}&page=${page}`;
-              } else {
-                url = `${API_LIST}?limit=${limit}&page=${page}`;
-              }
-              const res = await fetch(url);
-              const data = await res.json();
-              setMovies(data.data.items || []);
-              const pagination = data.data.params?.pagination;
-              const total = pagination ? Math.ceil(pagination.totalItems / limit) : 1;
-              setTotalPages(total > 0 ? total : 1);
-              if (keyword) {
-                setSearchTitle(`Kết quả cho: "${keyword}"`);
-              } else {
-                setSearchTitle('Phim Mới Cập Nhật');
-              }
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            } catch (error) {
-              console.error("Lỗi:", error);
-            } finally {
-              setLoading(false);
-            }
-          };
-
-          useEffect(() => {
-            if (!searchTerm) { fetchMovies(currentPage); }
-          }, [currentPage]);
-
-          useEffect(() => {
-            const delayDebounceFn = setTimeout(() => {
-              if (searchTerm) {
-                setCurrentPage(1); 
-                fetchMovies(1, searchTerm);
-              } else if (searchTerm === '' && view === 'home') {
-                fetchMovies(1);
-              }
-            }, 600);
-            return () => clearTimeout(delayDebounceFn);
-          }, [searchTerm]);
-
-          const openDetail = async (slug) => {
-            setDetailLoading(true);
-            setIsPlaying(false);
-            try {
-              const res = await fetch(API_DETAIL + slug);
-              const data = await res.json();
-              if (data.status) {
-                setSelectedMovie(data);
-                if (data.episodes?.[0]?.server_data?.[0]) {
-                  setActiveEpisode(data.episodes[0].server_data[0]);
+                const url = state.searchTerm 
+                    ? `${API_SEARCH}${encodeURIComponent(state.searchTerm)}&limit=24&page=${state.currentPage}`
+                    : `${API_LIST}?limit=24&page=${state.currentPage}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.status) {
+                    renderGrid(data.data.items);
+                    const pagination = data.data.params?.pagination;
+                    state.totalPages = pagination ? Math.ceil(pagination.totalItems / 24) : 1;
+                    renderPagination();
+                    document.getElementById('searchTitle').innerText = state.searchTerm ? `Kết quả: "${state.searchTerm}"` : "Đông Hoa Mới Cập Nhật";
                 }
-                setView('detail');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            } catch (error) {
-              console.error("Lỗi chi tiết:", error);
-            } finally {
-              setDetailLoading(false);
-            }
-          };
+            } catch (e) { console.error(e); }
+            finally { showLoading(false); }
+        }
 
-          const renderPagination = () => {
-            if (totalPages <= 1) return null;
-            const pages = [];
-            let startPage = Math.max(1, currentPage - 2);
-            let endPage = Math.min(totalPages, startPage + 4);
-            if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
-            return (
-              <div className="flex items-center justify-center gap-2 mt-16 flex-wrap">
-                <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronsLeft size={18} /></button>
-                <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronLeft size={18} /></button>
-                {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map(page => (
-                  <button key={page} onClick={() => setCurrentPage(page)} className={`w-11 h-11 rounded-xl text-sm font-black transition-all border ${currentPage === page ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-white/5 text-gray-400 border-white/5 hover:border-amber-500/50'}`}>{page}</button>
-                ))}
-                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronRight size={18} /></button>
-                <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50 disabled:opacity-20 transition"><ChevronsRight size={18} /></button>
-              </div>
-            );
-          };
-
-          return (
-            <div className="min-h-screen bg-[#020202] text-[#e5e5e5] font-sans selection:bg-amber-500/30">
-              <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-amber-900/10 blur-[150px] rounded-full"></div>
-                <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] bg-blue-900/5 blur-[150px] rounded-full"></div>
-              </div>
-
-              <header className="fixed top-0 w-full z-[100] bg-black/80 backdrop-blur-2xl border-b border-white/5">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
-                  <div onClick={() => { setView('home'); setSearchTerm(''); setCurrentPage(1); fetchMovies(1); }} className="flex items-center cursor-pointer group shrink-0">
-                    <h1 className="text-xl sm:text-2xl font-black tracking-tighter uppercase transition group-hover:opacity-80" style={{ fontFamily: "'Noto Serif SC', serif" }}>PHIM <span className="text-amber-500">HAY</span></h1>
-                  </div>
-                  <div className="flex-1 relative group max-w-xl mx-auto">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors"><Search size={18} /></div>
-                    <input type="text" placeholder="Tìm kiếm phim..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 py-2.5 sm:py-3 text-sm focus:bg-white/10 focus:border-amber-500/50 outline-none transition-all shadow-xl" />
-                    {searchTerm && <button onClick={() => { setSearchTerm(''); setCurrentPage(1); fetchMovies(1); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"><X size={18} /></button>}
-                  </div>
-                  <div className="hidden md:flex items-center gap-6 shrink-0">
-                     <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition cursor-pointer"><Tv size={18} className="text-amber-500" /></div>
-                  </div>
-                </div>
-              </header>
-
-              <main className="relative z-10 pt-20 sm:pt-28">
-                {view === 'home' ? (
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
-                    {!searchTerm && (
-                      <div className="flex flex-wrap items-center gap-3 mb-10 text-xs text-gray-400">
-                        <span className="flex items-center gap-1 text-amber-500 font-bold uppercase tracking-tighter"><TrendingUp size={14}/> HOT:</span>
-                        {['Conan', 'Phàm Nhân Tu Tiên', 'Đấu La Đại Lục', 'Naruto'].map(tag => (
-                          <button key={tag} onClick={() => setSearchTerm(tag)} className="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition">{tag}</button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-3"><div className="w-1.5 h-8 bg-amber-500 rounded-full"></div><h3 className="text-2xl font-black tracking-tight uppercase italic font-serif">{searchTitle}</h3></div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] hidden sm:block">Trang {currentPage}</div>
+        function renderGrid(movies) {
+            const grid = document.getElementById('movieGrid');
+            grid.innerHTML = movies.map(movie => `
+                <div onclick="openDetail('${movie.slug}')" class="group cursor-pointer flex flex-col gap-3 page-transition movie-card">
+                    <div class="relative aspect-[2/3] rounded-2xl overflow-hidden border border-white/5 shadow-2xl transition-all duration-500 group-hover:-translate-y-2 group-hover:border-amber-500/40">
+                        <img src="${movie.poster_url.startsWith('http') ? movie.poster_url : IMG_BASE + movie.poster_url}" class="w-full h-full object-cover transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                            <div class="w-full h-10 bg-amber-500 rounded-xl flex items-center justify-center text-black font-black text-[10px] tracking-widest uppercase shadow-xl">XEM NGAY</div>
+                        </div>
                     </div>
-                    {loading ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
-                        {[...Array(12)].map((_, i) => <div key={i} className="space-y-3"><div className="aspect-[2/3] bg-white/5 animate-pulse rounded-2xl"></div><div className="h-4 bg-white/5 animate-pulse rounded w-3/4 mx-auto"></div></div>)}
-                      </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
-                          {movies.length > 0 ? movies.map((movie) => (
-                            <div key={movie._id} onClick={() => openDetail(movie.slug)} className="group cursor-pointer space-y-3">
-                              <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border border-white/5 shadow-lg transition-all duration-500 group-hover:-translate-y-2 group-hover:border-amber-500/50">
-                                <OptimizedImage src={movie.poster_url || movie.thumb_url} alt={movie.name} className="w-full h-full" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                                   <div className="w-full h-10 bg-amber-500 rounded-xl flex items-center justify-center text-black font-black text-[10px] transform translate-y-4 group-hover:translate-y-0 transition-transform tracking-widest uppercase">XEM NGAY</div>
-                                </div>
-                                <div className="absolute top-2 right-2"><span className="px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-lg text-[9px] font-black text-amber-500 border border-amber-500/20">{movie.year}</span></div>
-                              </div>
-                              <div className="px-1 text-center sm:text-left">
-                                <h4 className="text-sm font-bold truncate group-hover:text-amber-500 transition-colors leading-tight">{movie.name}</h4>
-                                <p className="text-[10px] text-gray-500 truncate mt-1 uppercase tracking-tighter">{movie.origin_name}</p>
-                              </div>
-                            </div>
-                          )) : <div className="col-span-full py-32 flex flex-col items-center gap-4 text-gray-500"><Search size={48} className="opacity-10" /><p className="font-bold uppercase tracking-widest text-xs">Không tìm thấy phim</p></div>}
-                        </div>
-                        {renderPagination()}
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    {selectedMovie && (
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-                        <button onClick={() => setView('home')} className="flex items-center gap-2 text-gray-500 hover:text-white mb-10 transition-colors text-xs font-bold tracking-widest"><ChevronLeft size={16} /> QUAY LẠI</button>
-                        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
-                          <div className="lg:col-span-4 space-y-8">
-                            <OptimizedImage src={selectedMovie.movie.poster_url || selectedMovie.movie.thumb_url} className="rounded-3xl shadow-2xl aspect-[2/3] w-full border border-white/10" />
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="bg-white/5 rounded-2xl p-4 border border-white/5 text-center"><div className="text-amber-500 font-black text-lg">9.8</div><div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Đánh Giá</div></div>
-                              <div className="bg-white/5 rounded-2xl p-4 border border-white/5 text-center"><div className="text-white font-black text-lg">{selectedMovie.movie.year}</div><div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Phát Hành</div></div>
-                            </div>
-                          </div>
-                          <div className="lg:col-span-8 space-y-10">
-                            <div className="space-y-4">
-                              <h2 className="text-4xl sm:text-6xl font-black font-serif leading-tight">{selectedMovie.movie.name}</h2>
-                              <p className="text-xl text-gray-500 font-medium italic">{selectedMovie.movie.origin_name}</p>
-                            </div>
-                            <div className="space-y-6">
-                              <div className="flex items-center justify-between">
-                                 <h4 className="flex items-center gap-3 font-black text-sm uppercase tracking-widest text-amber-500">
-                                   <div className="w-2 h-2 bg-amber-500 animate-pulse rounded-full"></div> Tập: {activeEpisode?.name || '...'}
-                                 </h4>
-                              </div>
-                              <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative group z-10">
-                                {!isPlaying ? (
-                                  <div className="absolute inset-0 z-20">
-                                    <OptimizedImage src={selectedMovie.movie.poster_url || selectedMovie.movie.thumb_url} className="w-full h-full opacity-40 blur-sm" />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                      <button onClick={() => setIsPlaying(true)} className="w-20 h-20 bg-amber-500 rounded-full flex items-center justify-center text-black hover:scale-110 transition-transform duration-300 shadow-[0_0_40px_rgba(245,158,11,0.6)] cursor-pointer">
-                                        <Play size={40} fill="currentColor" className="ml-2" />
-                                      </button>
-                                    </div>
-                                    <div className="absolute bottom-6 left-0 w-full text-center text-white/80 font-bold uppercase tracking-widest text-sm animate-pulse">Nhấn để xem phim</div>
-                                  </div>
-                                ) : (
-                                  activeEpisode ? (
-                                    <iframe src={activeEpisode.link_embed} className="absolute inset-0 w-full h-full bg-black" frameBorder="0" allowFullScreen allow="autoplay; encrypted-media" title="Movie Player"></iframe>
-                                  ) : <div className="h-full flex items-center justify-center text-amber-500"><Loader2 className="animate-spin" /></div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="space-y-6">
-                              <h4 className="font-black text-xs uppercase tracking-widest text-gray-400">Danh sách tập</h4>
-                              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                {selectedMovie.episodes?.[0]?.server_data.map((ep, idx) => (
-                                  <button key={idx} onClick={() => { setActiveEpisode(ep); setIsPlaying(true); }} className={`min-w-[50px] px-4 py-2 rounded-xl text-xs font-black transition-all border ${activeEpisode?.name === ep.name ? 'bg-amber-500 text-black border-amber-500' : 'bg-white/5 text-gray-400 border-white/5 hover:border-amber-500/50 hover:text-white'}`}>{ep.name}</button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="p-8 bg-white/[0.02] rounded-3xl border border-white/5 space-y-4">
-                              <h4 className="text-lg font-black flex items-center gap-3 font-serif italic"><Info size={20} className="text-amber-500" /> Nội dung</h4>
-                              <div className="text-gray-400 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedMovie.movie.content }}></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </main>
-
-              {detailLoading && <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center"><Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" /><p className="text-xs font-black tracking-[0.4em] text-amber-500 animate-pulse uppercase">Vui lòng chờ...</p></div>}
-              
-              <footer className="mt-32 pb-16 px-6 border-t border-white/5 pt-16">
-                <div className="max-w-7xl mx-auto flex flex-col items-center gap-8">
-                  <div className="text-center space-y-2"><div className="text-2xl font-black font-serif tracking-tighter text-white/40 uppercase">PHIM <span className="text-amber-500/40">HAY</span></div></div>
-                  <div className="flex flex-col items-center gap-2"><div className="text-[10px] text-gray-900 font-black tracking-[1.5em] uppercase">Developed by</div><div className="thai-vu-mark text-sm font-serif italic text-white/[0.03]">Thái Vũ</div></div>
+                    <div class="px-1">
+                        <h4 class="text-sm font-bold truncate group-hover:text-amber-500 transition-colors">${movie.name}</h4>
+                        <p class="text-[10px] text-gray-500 truncate mt-0.5 uppercase tracking-tighter">${movie.origin_name}</p>
+                    </div>
                 </div>
-              </footer>
-            </div>
-          );
-        };
-        // ==========================================
-        // KẾT THÚC CODE CỦA BẠN
-        // ==========================================
+            `).join('');
+        }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        async function openDetail(slug) {
+            showLoading(true);
+            try {
+                const res = await fetch(API_DETAIL + slug);
+                const data = await res.json();
+                if (data.status) {
+                    state.selectedMovie = data;
+                    state.activeEpisode = data.episodes[0].server_data[0];
+                    
+                    updateDetailUI();
+                    saveToHistory(data.movie);
+                    
+                    document.getElementById('homeView').classList.add('hidden');
+                    document.getElementById('detailView').classList.remove('hidden');
+                    resetPlayerUI();
+                    
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    lucide.createIcons();
+                }
+            } catch (e) { console.error(e); }
+            finally { showLoading(false); }
+        }
+
+        function updateDetailUI() {
+            const m = state.selectedMovie.movie;
+            document.getElementById('detailName').innerText = m.name;
+            document.getElementById('detailOriginName').innerText = m.origin_name;
+            document.getElementById('detailPoster').src = m.poster_url;
+            document.getElementById('playerThumb').src = m.thumb_url;
+            document.getElementById('detailContent').innerHTML = m.content;
+            document.getElementById('currentEpisodeName').innerText = state.activeEpisode.name;
+            
+            const epGrid = document.getElementById('episodeGrid');
+            epGrid.innerHTML = state.selectedMovie.episodes[0].server_data.map(ep => `
+                <button onclick="changeEpisode('${ep.name}')" 
+                    class="min-w-[55px] h-10 px-4 rounded-xl text-xs font-black border transition-all 
+                    ${state.activeEpisode.name === ep.name ? 'bg-amber-500 text-black border-amber-500' : 'bg-white/5 text-gray-400 border-white/5 hover:border-amber-500/50'}">
+                    ${ep.name}
+                </button>
+            `).join('');
+        }
+
+        function startPlaying() {
+            const iframe = document.getElementById('movieIframe');
+            const overlay = document.getElementById('playOverlay');
+            if (state.activeEpisode) {
+                iframe.src = state.activeEpisode.link_embed;
+                iframe.classList.remove('hidden');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function changeEpisode(epName) {
+            const ep = state.selectedMovie.episodes[0].server_data.find(e => e.name === epName);
+            if (ep) {
+                state.activeEpisode = ep;
+                document.getElementById('currentEpisodeName').innerText = ep.name;
+                
+                const iframe = document.getElementById('movieIframe');
+                iframe.src = ep.link_embed;
+                iframe.classList.remove('hidden');
+                document.getElementById('playOverlay').classList.add('hidden');
+                
+                document.querySelectorAll('#episodeGrid button').forEach(btn => {
+                    if (btn.innerText === epName) {
+                        btn.classList.add('bg-amber-500', 'text-black');
+                        btn.classList.remove('bg-white/5', 'text-gray-400');
+                    } else {
+                        btn.classList.remove('bg-amber-500', 'text-black');
+                        btn.classList.add('bg-white/5', 'text-gray-400');
+                    }
+                });
+                
+                document.getElementById('playerWrapper').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function saveToHistory(movie) {
+            const entry = {
+                id: movie._id,
+                name: movie.name,
+                slug: movie.slug,
+                poster: movie.poster_url,
+                time: Date.now()
+            };
+            
+            // Remove if exists, then unshift
+            state.history = state.history.filter(m => m.id !== entry.id);
+            state.history.unshift(entry);
+            state.history = state.history.slice(0, 10); // Keep 10
+            
+            localStorage.setItem('donghua_history', JSON.stringify(state.history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const section = document.getElementById('historySection');
+            const grid = document.getElementById('historyGrid');
+            
+            if (state.history.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+            
+            section.classList.remove('hidden');
+            grid.innerHTML = state.history.map(m => `
+                <div onclick="openDetail('${m.slug}')" class="min-w-[120px] sm:min-w-[150px] cursor-pointer group">
+                    <div class="relative aspect-[2/3] rounded-xl overflow-hidden border border-white/5 mb-2">
+                        <img src="${m.poster}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <i data-lucide="play" class="w-8 h-8 text-amber-500 fill-current"></i>
+                        </div>
+                    </div>
+                    <p class="text-[11px] font-bold truncate text-gray-400 group-hover:text-amber-500 transition-colors">${m.name}</p>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function clearHistory() {
+            state.history = [];
+            localStorage.removeItem('donghua_history');
+            renderHistory();
+        }
+
+        function goHome() {
+            document.getElementById('homeView').classList.remove('hidden');
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('movieIframe').src = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderHistory();
+        }
+
+        function resetPlayerUI() {
+            document.getElementById('movieIframe').classList.add('hidden');
+            document.getElementById('movieIframe').src = '';
+            document.getElementById('playOverlay').classList.remove('hidden');
+        }
+
+        function renderPagination() {
+            const nav = document.getElementById('pagination');
+            if (state.totalPages <= 1) { nav.innerHTML = ''; return; }
+            let html = `<button onclick="changePage(1)" class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50"><i data-lucide="chevrons-left" class="w-4 h-4"></i></button>`;
+            let start = Math.max(1, state.currentPage - 2), end = Math.min(state.totalPages, start + 4);
+            if (end - start < 4) start = Math.max(1, end - 4);
+            for (let i = start; i <= end; i++) {
+                html += `<button onclick="changePage(${i})" class="w-10 h-10 rounded-xl text-xs font-bold border ${state.currentPage === i ? 'active-page' : 'bg-white/5 text-gray-400 border-white/5'}">${i}</button>`;
+            }
+            html += `<button onclick="changePage(${state.totalPages})" class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/50"><i data-lucide="chevrons-right" class="w-4 h-4"></i></button>`;
+            nav.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function changePage(p) { state.currentPage = p; fetchMovies(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        
+        function renderTags() {
+            const tags = ['Thế Giới Hoàn Mỹ', 'Tiên Nghịch', 'Đấu Phá Thương Khung', 'Thần Ấn Vương Tọa'];
+            document.getElementById('hotTags').innerHTML += tags.map(tag => `
+                <button onclick="setSearch('${tag}')" class="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-all text-[10px] text-gray-400 whitespace-nowrap">${tag}</button>
+            `).join('');
+        }
+
+        function setSearch(val) { document.getElementById('searchInput').value = val; state.searchTerm = val; state.currentPage = 1; fetchMovies(); }
+        function showLoading(s) { document.getElementById('globalLoading').classList.toggle('hidden', !s); }
+
+        init();
     </script>
 </body>
 </html>
+
