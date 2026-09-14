@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Xem Phim CùngThái — Xem phim Vietsub, thuyết minh miễn phí</title>
+<meta name="description" content="Xem phim mới, phim bộ, phim lẻ, hoạt hình vietsub thuyết minh chất lượng cao.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Thanh điều hướng -->
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a href="#/home" class="brand" data-route="home">XEM<span>PHIM</span><i>CÙNGTHÁI</i></a>
+
+    <nav class="main-nav" id="mainNav">
+      <a href="#/home" data-route="home">Trang chủ</a>
+      <a href="#/list/phim-bo" data-route="list/phim-bo">Phim bộ</a>
+      <a href="#/list/phim-le" data-route="list/phim-le">Phim lẻ</a>
+      <a href="#/list/hoat-hinh" data-route="list/hoat-hinh">Hoạt hình</a>
+      <a href="#/list/tv-shows" data-route="list/tv-shows">TV Shows</a>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-btn" type="button">Thể loại <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
+        <div class="nav-dropdown-panel" id="genrePanel"></div>
+      </div>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-btn" type="button">Quốc gia <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
+        <div class="nav-dropdown-panel" id="countryPanel"></div>
+      </div>
+      <a href="#/yeu-thich" data-route="yeu-thich">Yêu thích</a>
+      <a href="#/lich-su" data-route="lich-su">Lịch sử</a>
+    </nav>
+
+    <div class="search-wrap">
+      <input type="search" id="searchInput" placeholder="Tìm phim, diễn viên..." autocomplete="off">
+      <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <button class="search-clear" id="searchClear" aria-label="Xóa" type="button">&times;</button>
+      <div class="search-suggest" id="searchSuggest"></div>
+    </div>
+
+    <button class="icon-btn mobile-search-btn" id="mobileSearchBtn" aria-label="Tìm kiếm">
+      <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- Ô tìm kiếm riêng cho mobile -->
+  <div class="mobile-search-bar" id="mobileSearchBar">
+    <div class="search-wrap search-wrap-mobile">
+      <input type="search" id="searchInputMobile" placeholder="Tìm phim, diễn viên..." autocomplete="off">
+      <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="search-suggest" id="searchSuggestMobile"></div>
+    </div>
+  </div>
+
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#/home" data-route="home">Trang chủ</a>
+    <a href="#/list/phim-bo" data-route="list/phim-bo">Phim bộ</a>
+    <a href="#/list/phim-le" data-route="list/phim-le">Phim lẻ</a>
+    <a href="#/list/hoat-hinh" data-route="list/hoat-hinh">Hoạt hình</a>
+    <a href="#/list/tv-shows" data-route="list/tv-shows">TV Shows</a>
+    <a href="#/yeu-thich" data-route="yeu-thich">Yêu thích</a>
+    <a href="#/lich-su" data-route="lich-su">Lịch sử xem</a>
+  </div>
+</header>
+
+<main id="app">
+  <div class="loader-page" id="pageLoader"><div class="reel"></div></div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">XEM<span>PHIM</span> CÙNGTHÁI</div>
+    <p>Dữ liệu phim được tổng hợp từ nguồn công khai (KKPhim API). Trang web chỉ phục vụ mục đích xem thử, không lưu trữ file phim trên máy chủ.</p>
+    <p class="footer-copy">© <span id="year"></span> Xem Phim CùngThái. Made for movie nights.</p>
+  </div>
+</footer>
+
+<!-- Toast thông báo nhỏ -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
