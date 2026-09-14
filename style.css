@@ -110,8 +110,8 @@ img{ display: block; max-width: 100%; }
   opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
   z-index: 50;
 }
-/* Chỉ mở bằng click/tap/Enter (class .open do JS điều khiển) — KHÔNG dùng :hover,
-   để hoạt động nhất quán trên chuột, cảm ứng và remote TV như các web lớn (Netflix, YouTube). */
+/* Mở bằng click/tap/Enter (class .open do JS điều khiển trong buildNavPanels) —
+   KHÔNG dùng :hover, để hoạt động nhất quán trên chuột, cảm ứng và remote TV. */
 .nav-dropdown.open .nav-dropdown-panel{
   opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0);
 }
@@ -209,9 +209,9 @@ img{ display: block; max-width: 100%; }
 .skel-hero{ aspect-ratio: 21/9; min-height: 380px; max-height: 640px; }
 
 /* ===================== HERO =====================
-   Dùng aspect-ratio thay vì đơn vị vh/svh: một số Smart TV (webOS, Tizen)
-   tính sai chiều cao viewport theo overscan, khiến hero bị tràn hoặc hụt.
-   aspect-ratio dựa trên chiều rộng thực tế nên luôn ổn định trên mọi màn hình. */
+   Dùng aspect-ratio thay vì vh: một số Smart TV (webOS, Tizen) tính sai
+   chiều cao viewport theo overscan, khiến hero bị tràn hoặc hụt.
+   aspect-ratio dựa theo chiều rộng thật nên ổn định trên mọi màn hình. */
 .hero{
   position: relative;
   width: 100%;
@@ -682,12 +682,6 @@ body.tv-nav-active .brand.tv-focused{
   color: var(--gold) !important;
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-body.tv-nav-active .nav-dropdown-panel a.tv-focused{
-  box-shadow: none !important;
-  transform: none;
-  background: var(--red-dim);
-  color: var(--cream) !important;
 }
 /* Con trỏ chuột ẩn đi khi đang điều khiển bằng remote để đỡ rối mắt */
 body.tv-nav-active{ cursor: none; }
