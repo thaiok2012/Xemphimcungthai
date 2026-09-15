@@ -23,14 +23,6 @@
       <a href="#/list/phim-le" data-route="list/phim-le">Phim lẻ</a>
       <a href="#/list/hoat-hinh" data-route="list/hoat-hinh">Hoạt hình</a>
       <a href="#/list/tv-shows" data-route="list/tv-shows">TV Shows</a>
-      <div class="nav-dropdown">
-        <button class="nav-dropdown-btn" type="button">Thể loại <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
-        <div class="nav-dropdown-panel" id="genrePanel"></div>
-      </div>
-      <div class="nav-dropdown">
-        <button class="nav-dropdown-btn" type="button">Quốc gia <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
-        <div class="nav-dropdown-panel" id="countryPanel"></div>
-      </div>
       <a href="#/yeu-thich" data-route="yeu-thich">Yêu thích</a>
       <a href="#/lich-su" data-route="lich-su">Lịch sử</a>
     </nav>
@@ -46,7 +38,7 @@
       <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
 
-    <button class="hamburger" id="hamburger" aria-label="Menu">
+    <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
@@ -59,17 +51,73 @@
       <div class="search-suggest" id="searchSuggestMobile"></div>
     </div>
   </div>
-
-  <div class="mobile-nav" id="mobileNav">
-    <a href="#/home" data-route="home">Trang chủ</a>
-    <a href="#/list/phim-bo" data-route="list/phim-bo">Phim bộ</a>
-    <a href="#/list/phim-le" data-route="list/phim-le">Phim lẻ</a>
-    <a href="#/list/hoat-hinh" data-route="list/hoat-hinh">Hoạt hình</a>
-    <a href="#/list/tv-shows" data-route="list/tv-shows">TV Shows</a>
-    <a href="#/yeu-thich" data-route="yeu-thich">Yêu thích</a>
-    <a href="#/lich-su" data-route="lich-su">Lịch sử xem</a>
-  </div>
 </header>
+
+<!-- Menu trượt (gộp cả Thể loại + Quốc gia dạng accordion, dùng cho mọi kích thước màn hình) -->
+<div class="menu-backdrop" id="menuBackdrop"></div>
+<aside class="side-menu" id="sideMenu" aria-hidden="true">
+  <div class="side-menu-head">
+    <span class="side-menu-title">Menu</span>
+    <button class="side-menu-close" id="sideMenuClose" aria-label="Đóng menu">&times;</button>
+  </div>
+  <nav class="side-menu-body">
+    <a href="#/home" data-route="home" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11l9-8 9 8M5 10v10h14V10" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Trang chủ
+    </a>
+    <a href="#/list/phim-bo" data-route="list/phim-bo" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8"/><path d="M8 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Phim bộ
+    </a>
+    <a href="#/list/phim-le" data-route="list/phim-le" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="1.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 4v5M16 4v5" stroke="currentColor" stroke-width="1.8"/></svg>
+      Phim lẻ
+    </a>
+    <a href="#/list/hoat-hinh" data-route="list/hoat-hinh" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zM8 12h.01M16 12h.01M9 16c.7.7 1.8 1 3 1s2.3-.3 3-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Hoạt hình
+    </a>
+    <a href="#/list/tv-shows" data-route="list/tv-shows" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8"/><path d="M8 22h8M12 19v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      TV Shows
+    </a>
+
+    <!-- Accordion Thể loại -->
+    <button class="side-accordion-btn" id="genreAccordionBtn" type="button" aria-expanded="false">
+      <span class="side-link-inner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Thể loại
+      </span>
+      <svg class="accordion-chevron" width="12" height="7" viewBox="0 0 12 7"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+    </button>
+    <div class="side-accordion-panel" id="genreAccordionPanel">
+      <div class="side-chip-grid" id="genrePanel"></div>
+    </div>
+
+    <!-- Accordion Quốc gia -->
+    <button class="side-accordion-btn" id="countryAccordionBtn" type="button" aria-expanded="false">
+      <span class="side-link-inner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.5 3.5 6 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-6-3.5-9s1-6.5 3.5-9z" stroke="currentColor" stroke-width="1.8"/></svg>
+        Quốc gia
+      </span>
+      <svg class="accordion-chevron" width="12" height="7" viewBox="0 0 12 7"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+    </button>
+    <div class="side-accordion-panel" id="countryAccordionPanel">
+      <div class="side-chip-grid" id="countryPanel"></div>
+    </div>
+
+    <div class="side-menu-divider"></div>
+
+    <a href="#/yeu-thich" data-route="yeu-thich" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Yêu thích
+    </a>
+    <a href="#/lich-su" data-route="lich-su" class="side-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+      Lịch sử xem
+    </a>
+  </nav>
+</aside>
 
 <main id="app">
   <div class="loader-page" id="pageLoader"><div class="reel"></div></div>
