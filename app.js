@@ -246,55 +246,55 @@ function rowSection(title, items, moreHash){
   </section>`;
 }
 
-/* ---------------- nav dropdowns ---------------- */
+/* ---------------- menu trượt (Trang chủ, Thể loại, Quốc gia, Yêu thích...) ---------------- */
 function buildNavPanels(){
   document.getElementById('genrePanel').innerHTML = GENRES
     .map(g => `<a href="#/the-loai/${g.slug}">${g.name}</a>`).join('');
   document.getElementById('countryPanel').innerHTML = COUNTRIES
     .map(c => `<a href="#/quoc-gia/${c.slug}">${c.name}</a>`).join('');
 
-  // Mở/đóng bằng click hoặc phím Enter — hoạt động giống hệt trên chuột,
-  // cảm ứng và remote TV (nút OK trên remote phát ra sự kiện click/Enter).
-  // Không dùng :hover vì remote/cảm ứng không có khái niệm "rê chuột".
-  document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
-    const btn = dropdown.querySelector('.nav-dropdown-btn');
-    if(!btn) return;
-    btn.setAttribute('tabindex', '0');
-    btn.setAttribute('role', 'button');
-    btn.setAttribute('aria-expanded', 'false');
+  const hamburger = document.getElementById('hamburger');
+  const sideMenu = document.getElementById('sideMenu');
+  const backdrop = document.getElementById('menuBackdrop');
+  const closeBtn = document.getElementById('sideMenuClose');
 
-    function toggle(){
-      const willOpen = !dropdown.classList.contains('open');
-      // Đóng mọi dropdown khác trước khi mở cái này
-      document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-        d.classList.remove('open');
-        d.querySelector('.nav-dropdown-btn')?.setAttribute('aria-expanded', 'false');
-      });
-      if(willOpen){
-        dropdown.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
-      }
-    }
+  function openMenu(){
+    sideMenu.classList.add('open');
+    backdrop.classList.add('show');
+    hamburger.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    sideMenu.setAttribute('aria-hidden', 'false');
+  }
+  function closeMenu(){
+    sideMenu.classList.remove('open');
+    backdrop.classList.remove('show');
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    sideMenu.setAttribute('aria-hidden', 'true');
+  }
+  hamburger.addEventListener('click', () => {
+    sideMenu.classList.contains('open') ? closeMenu() : openMenu();
+  });
+  closeBtn.addEventListener('click', closeMenu);
+  backdrop.addEventListener('click', closeMenu);
+  // Chọn 1 mục (link thường hoặc link trong accordion) → tự đóng menu lại
+  sideMenu.querySelectorAll('.side-link, .side-chip-grid a').forEach(a => {
+    a.addEventListener('click', closeMenu);
+  });
+  window.closeSideMenu = closeMenu; // dùng lại trong phím Backspace
 
-    btn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
-    btn.addEventListener('keydown', e => {
-      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+  // Accordion Thể loại / Quốc gia: expand tại chỗ, animation chiều cao mượt
+  function setupAccordion(btnId, panelId){
+    const btn = document.getElementById(btnId);
+    const panel = document.getElementById(panelId);
+    btn.addEventListener('click', () => {
+      const willOpen = !panel.classList.contains('open');
+      panel.classList.toggle('open', willOpen);
+      btn.setAttribute('aria-expanded', String(willOpen));
     });
-  });
-
-  // Click ra ngoài dropdown (hoặc chọn 1 mục) → tự đóng lại
-  document.addEventListener('click', e => {
-    if(e.target.closest('.nav-dropdown')) return;
-    document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-      d.classList.remove('open');
-      d.querySelector('.nav-dropdown-btn')?.setAttribute('aria-expanded', 'false');
-    });
-  });
-  document.querySelectorAll('.nav-dropdown-panel a').forEach(a => {
-    a.addEventListener('click', () => {
-      a.closest('.nav-dropdown')?.classList.remove('open');
-    });
-  });
+  }
+  setupAccordion('genreAccordionBtn', 'genreAccordionPanel');
+  setupAccordion('countryAccordionBtn', 'countryAccordionPanel');
 }
 
 /* ---------------- hero ---------------- */
@@ -1309,42 +1309,75 @@ function showKeyHint(text){
 document.addEventListener('keydown', e => {
   const video = document.getElementById('videoPlayer');
   if(!video) return; // không ở trang xem phim
+
+  // Chỉ trái/phải dùng để tua — KHÔNG dùng lên/xuống cho âm lượng nữa.
+  // Lên/xuống giờ luôn dành riêng cho D-pad di chuyển sang danh sách tập/server,
+  // tránh việc 2 hệ thống tranh giành phím mũi tên gây cảm giác "kẹt".
   switch(e.key){
     case ' ':
-    case 'Enter':
     case 'MediaPlayPause':
-      if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return; // để Enter hoạt động bình thường trên nút/link
+      if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+      if(typeof tvNavActive !== 'undefined' && tvNavActive && tvFocusedEl !== video) return;
       e.preventDefault();
       if(video.paused){ video.play().catch(()=>{}); showKeyHint('▶'); }
       else { video.pause(); showKeyHint('❚❚'); }
       break;
     case 'ArrowLeft':
+      if(typeof tvNavActive !== 'undefined' && tvNavActive && tvFocusedEl !== video) return;
       e.preventDefault();
       video.currentTime = Math.max(0, video.currentTime - SEEK_STEP);
       showKeyHint('« ' + SEEK_STEP + 's');
       break;
     case 'ArrowRight':
+      if(typeof tvNavActive !== 'undefined' && tvNavActive && tvFocusedEl !== video) return;
       e.preventDefault();
       video.currentTime = Math.min(video.duration || Infinity, video.currentTime + SEEK_STEP);
       showKeyHint(SEEK_STEP + 's »');
       break;
-    case 'ArrowUp':
-      e.preventDefault();
-      video.volume = Math.min(1, video.volume + 0.1);
-      showKeyHint('🔊 ' + Math.round(video.volume*100) + '%');
-      break;
-    case 'ArrowDown':
-      e.preventDefault();
-      video.volume = Math.max(0, video.volume - 0.1);
-      showKeyHint('🔉 ' + Math.round(video.volume*100) + '%');
-      break;
     case 'f':
     case 'F':
       e.preventDefault();
-      if(document.fullscreenElement){ document.exitFullscreen(); }
-      else { document.getElementById('playerFrame').requestFullscreen?.(); }
+      toggleFullscreen();
       break;
   }
+});
+
+/* ---------------- phím "Back/Thoát" thay thế cho Esc bị hỏng ----------------
+   Remote TV thường không có phím Esc vật lý. Backspace được dùng làm phím
+   "quay lại" chung cho toàn bộ trang web (không chỉ lúc xem phim):
+   - Nếu đang toàn màn hình → thoát toàn màn hình trước
+   - Nếu có dropdown Thể loại/Quốc gia hoặc menu đang mở → đóng lại
+   - Nếu không còn gì để đóng → quay lại trang trước đó (giống nút Back của trình duyệt) */
+function toggleFullscreen(){
+  const frame = document.getElementById('playerFrame');
+  if(document.fullscreenElement){ document.exitFullscreen(); }
+  else if(frame){ frame.requestFullscreen?.(); }
+}
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Backspace') return;
+  const tag = document.activeElement?.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return; // để xóa chữ bình thường khi đang gõ
+
+  if(document.fullscreenElement){
+    e.preventDefault();
+    document.exitFullscreen();
+    return;
+  }
+  const openAccordion = document.querySelector('.side-accordion-panel.open');
+  const sideMenu = document.getElementById('sideMenu');
+  if(sideMenu && sideMenu.classList.contains('open')){
+    e.preventDefault();
+    if(openAccordion){
+      // Đóng accordion đang mở trước, để lần bấm Back tiếp theo mới đóng cả menu
+      openAccordion.classList.remove('open');
+      openAccordion.previousElementSibling?.setAttribute('aria-expanded', 'false');
+    } else if(window.closeSideMenu){
+      window.closeSideMenu();
+    }
+    return;
+  }
+  e.preventDefault();
+  history.back();
 });
 
 /* ---------------- router ---------------- */
@@ -1356,10 +1389,12 @@ function router(){
   const routeKey = segments[0] || 'home';
   const params = segments.slice(1);
 
-  document.querySelectorAll('.main-nav a, .mobile-nav a').forEach(a => {
+  document.querySelectorAll('.main-nav a, .side-link').forEach(a => {
     a.classList.toggle('active', a.dataset.route === pathPart || (a.dataset.route === 'home' && routeKey === 'home' && !params.length));
   });
-  document.getElementById('mobileNav').classList.remove('show');
+  document.getElementById('sideMenu')?.classList.remove('open');
+  document.getElementById('menuBackdrop')?.classList.remove('show');
+  document.getElementById('hamburger')?.classList.remove('open');
   document.getElementById('mobileSearchBar').classList.remove('show');
 
   const handler = routes[routeKey] || renderHomePage;
@@ -1496,21 +1531,13 @@ document.addEventListener('click', e => {
   });
 });
 
-/* ---------------- mobile nav & search toggle ---------------- */
-document.getElementById('hamburger').addEventListener('click', (e) => {
-  e.stopPropagation();
-  const mobileNav = document.getElementById('mobileNav');
-  const searchBar = document.getElementById('mobileSearchBar');
-  mobileNav.classList.toggle('show');
-  searchBar.classList.remove('show');
-});
+/* ---------------- search mobile toggle ---------------- */
+// (nút hamburger giờ mở menu trượt — đã được gắn sự kiện trong buildNavPanels())
 document.getElementById('mobileSearchBtn').addEventListener('click', (e) => {
   e.stopPropagation();
   const bar = document.getElementById('mobileSearchBar');
-  const mobileNav = document.getElementById('mobileNav');
   const willShow = !bar.classList.contains('show');
   bar.classList.toggle('show', willShow);
-  mobileNav.classList.remove('show');
   if(willShow){
     setTimeout(() => document.getElementById('searchInputMobile').focus(), 50);
   }
@@ -1529,16 +1556,13 @@ router();
 
 /* =========================================================
    ĐIỀU KHIỂN BẰNG REMOTE TV (D-PAD NAVIGATION)
-   Cho phép dùng phím mũi tên + OK/Enter để duyệt toàn bộ trang.
-   Đơn giản hoá: D-pad chỉ lo việc DI CHUYỂN FOCUS + "Enter = click".
-   Việc mở/đóng dropdown Thể loại-Quốc gia đã do buildNavPanels() xử lý
-   bằng click thật (xem phía trên), nên khi remote bấm OK trên nút đó,
-   nó tự hoạt động giống hệt click chuột — không cần logic riêng nữa.
+   Cho phép dùng phím mũi tên + OK/Enter để duyệt toàn bộ trang,
+   giống cách Netflix/YouTube hoạt động trên Smart TV.
 ========================================================= */
 const TV_FOCUSABLE_SELECTOR = [
   '.card', '.hero-play', '.hero-dots button', '.btn', '.btn-icon', '.btn-ghost',
-  '.card-fav-btn', '.nav-dropdown-btn', '.main-nav > a', '.mobile-nav a',
-  '.nav-dropdown-panel a',
+  '.card-fav-btn', '.main-nav > a',
+  '.side-link', '.side-accordion-btn', '.side-chip-grid a', '.side-menu-close',
   '.brand', '#searchInput', '#searchInputMobile', '.search-clear',
   '.hamburger', '.mobile-search-btn', '.ep-server-btn', '.ep-btn',
   '.pagination button:not(:disabled)', '.pagination-jump input', '.pagination-jump button',
@@ -1555,7 +1579,8 @@ function isVisible(el){
   if(rect.width === 0 && rect.height === 0) return false;
   const style = window.getComputedStyle(el);
   if(style.display === 'none' || style.visibility === 'hidden') return false;
-  if(style.opacity === '0') return false;
+  // Bỏ qua phần tử nằm trong panel/dropdown đang ẩn (opacity 0 + pointer-events none)
+  if(style.opacity === '0' && style.pointerEvents === 'none') return false;
   return true;
 }
 
@@ -1573,7 +1598,15 @@ function setTvFocus(el, opts){
   el.classList.add('tv-focused');
   tvFocusedEl = el;
   if(!opts || opts.scroll !== false){
-    el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    // Card trong hàng cuộn ngang: canh giữa khung nhìn để không bao giờ bị
+    // kẹt cắt nửa ở rìa màn hình (đặc biệt quan trọng trên TV màn hình lớn).
+    // Các phần tử khác (nút, link...) chỉ cần "nearest" là đủ, tránh giật trang.
+    const inRow = el.closest('.row-scroll');
+    el.scrollIntoView({
+      block: 'nearest',
+      inline: inRow ? 'center' : 'nearest',
+      behavior: 'smooth',
+    });
   }
 }
 
@@ -1637,33 +1670,72 @@ function deactivateTvMode(){
 document.addEventListener('keydown', (e) => {
   const tag = document.activeElement?.tagName;
   const isTyping = tag === 'INPUT' || tag === 'TEXTAREA';
-  const isWatchPage = !!document.getElementById('videoPlayer');
+
+  // Chỉ nhường phím mũi tên cho player (tua/âm lượng) khi con trỏ ĐANG THỰC SỰ
+  // nằm trên thẻ <video> — không phải cứ ở trang xem phim là khóa toàn bộ D-pad,
+  // vì như vậy sẽ không thể di chuyển sang danh sách tập bên cạnh được nữa.
+  const videoEl = document.getElementById('videoPlayer');
+  const isVideoFocused = !!videoEl && tvFocusedEl === videoEl;
+
   const navKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
 
   if(navKeys.includes(e.key)){
-    if(isTyping) return;    // để gõ tìm kiếm bình thường
-    if(isWatchPage) return; // trang xem phim dùng phím tắt riêng (tua, âm lượng...)
+    if(isTyping) return; // để gõ tìm kiếm bình thường
+
+    // Khi đang "đứng" trên chính video: trái/phải dành để tua, nhưng lên/xuống
+    // vẫn phải thoát ra được để chuyển sang danh sách tập/server bên cạnh —
+    // nếu không, người dùng bị kẹt vĩnh viễn trong video không thoát ra được.
+    if(isVideoFocused && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
 
     activateTvMode();
     const dirMap = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right' };
+
+    // Nếu đang đứng ở nút "Thể loại"/"Quốc gia" trong menu trượt và bấm xuống,
+    // MỞ ACCORDION TRƯỚC rồi mới tìm phần tử kế tiếp — nếu không, các link bên
+    // trong panel vẫn đang thu gọn (max-height: 0) nên D-pad sẽ nhảy qua chỗ khác.
+    if(e.key === 'ArrowDown' && tvFocusedEl && tvFocusedEl.classList.contains('side-accordion-btn')){
+      const panel = tvFocusedEl.nextElementSibling;
+      if(panel && panel.classList.contains('side-accordion-panel') && !panel.classList.contains('open')){
+        panel.classList.add('open');
+        tvFocusedEl.setAttribute('aria-expanded', 'true');
+      }
+    }
+
     const next = findNextTvFocus(tvFocusedEl, dirMap[e.key]);
     if(next){
       e.preventDefault();
       setTvFocus(next);
+      // Rời khỏi accordion panel (di chuyển tới phần tử ngoài nó) → tự thu gọn lại
+      const stillInsidePanel = next.closest('.side-accordion-panel');
+      document.querySelectorAll('.side-accordion-panel.open').forEach(p => {
+        if(p !== stillInsidePanel){
+          p.classList.remove('open');
+          p.previousElementSibling?.setAttribute('aria-expanded', 'false');
+        }
+      });
     }
     return;
   }
 
-  if((e.key === 'Enter' || e.keyCode === 13) && tvNavActive && tvFocusedEl && !isTyping && !isWatchPage){
-    // OK trên remote = click phần tử đang focus. Vì dropdown giờ mở bằng click
-    // (xem buildNavPanels), việc này tự động mở/đóng đúng như bấm chuột thật.
+  if((e.key === 'Enter' || e.keyCode === 13) && tvNavActive && tvFocusedEl && !isTyping && !isVideoFocused){
+    // OK trên remote = click phần tử đang được focus (mở menu, chọn tập, bấm Xem ngay...)
     e.preventDefault();
     tvFocusedEl.click();
     return;
   }
+});
 
-  if(e.key === 'Escape' && tvNavActive){
-    document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+// Bấm Enter/OK khi đang focus đúng nút Play trong player_frame cũng nên cho phép
+// nhảy vào điều khiển video (focus vào thẻ video) để tua/chỉnh âm lượng bằng D-pad.
+document.addEventListener('keydown', (e) => {
+  if((e.key === 'Enter' || e.keyCode === 13) && tvNavActive){
+    const frame = tvFocusedEl && tvFocusedEl.closest && tvFocusedEl.closest('.player-frame');
+    if(frame){
+      const video = document.getElementById('videoPlayer');
+      if(video && tvFocusedEl !== video){
+        setTvFocus(video, { scroll: false });
+      }
+    }
   }
 });
 
@@ -1679,12 +1751,13 @@ document.addEventListener('mousemove', (e) => {
 }, { passive: true });
 document.addEventListener('touchstart', () => { if(tvNavActive) deactivateTvMode(); }, { passive: true });
 
-// Sau mỗi lần chuyển trang, nếu đang ở chế độ TV thì tự focus phần tử đầu tiên
+// Sau mỗi lần chuyển trang (router), nếu đang ở chế độ TV thì tự focus vào phần tử đầu tiên
 window.addEventListener('hashchange', () => {
+  document.querySelectorAll('.side-accordion-panel.open').forEach(p => p.classList.remove('open'));
   if(tvNavActive){
     setTimeout(() => {
       const first = getTvFocusableElements()[0];
       if(first) setTvFocus(first, { scroll: false });
-    }, 120);
+    }, 120); // đợi router render xong nội dung mới
   }
 });
